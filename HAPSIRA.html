@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dhomën e Misterit – Edicioni Kozmik (HTML/JS)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Creepster&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0a0a23;
+      --accent-red: #ff4757;
+      --accent-yellow: #ffa502;
+      --accent-blue: #3742fa;
+      --glow: rgba(255, 255, 255, 0.3);
+      --text: #fff;
+    }
+    body {
+      margin: 0; padding: 0; height: 100vh; font-family: 'Montserrat', sans-serif;
+      background: linear-gradient(135deg, #0a0a23, #1a1a3a);
+      color: var(--text); display: flex; justify-content: center; align-items: center;
+      overflow: hidden; position: relative;
+    }
+    /* Yjet kozmikë në sfond për efekt misterioz */
+    body::before {
+      content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: radial-gradient(1px 1px at 20% 30%, #fff, transparent),
+                  radial-gradient(1px 1px at 80% 80%, rgba(255,255,255,0.5), transparent),
+                  radial-gradient(2px 2px at 40% 50%, #fff, transparent);
+      background-repeat: repeat; background-size: 200px 150px;
+      animation: stars 20s linear infinite;
+    }
+    @keyframes stars { from { transform: translateY(0); } to { transform: translateY(-100px); } }
+    
+    .container {
+      text-align: center; max-width: 500px; padding: 20px; z-index: 1;
+      background: rgba(0,0,0,0.5); border-radius: 20px; backdrop-filter: blur(10px);
+      box-shadow: 0 0 30px var(--glow); border: 1px solid rgba(255,255,255,0.1);
+    }
+    .title {
+      font-family: 'Creepster', cursive; font-size: 3em; margin-bottom: 20px;
+      background: linear-gradient(45deg, var(--accent-red), var(--accent-yellow), var(--accent-blue));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 20px var(--glow); animation: glow 2s ease-in-out infinite alternate;
+    }
+    @keyframes glow { from { text-shadow: 0 0 20px var(--glow); } to { text-shadow: 0 0 30px var(--glow); } }
+    
+    .doors {
+      display: flex; justify-content: space-around; margin: 30px 0; flex-wrap: wrap;
+    }
+    .door-btn {
+      padding: 15px 25px; margin: 10px; border: none; border-radius: 15px; cursor: pointer;
+      font-size: 1.2em; font-weight: 700; color: var(--text); transition: all 0.3s ease;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3); min-width: 120px;
+    }
+    .door-red { background: linear-gradient(135deg, var(--accent-red), #ff6b7a); }
+    .door-yellow { background: linear-gradient(135deg, var(--accent-yellow), #ffcc02); }
+    .door-blue { background: linear-gradient(135deg, var(--accent-blue), #5a67d8); }
+    .door-btn:hover:not(:disabled) { transform: scale(1.05); box-shadow: 0 8px 25px var(--glow); }
+    .door-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    
+    .input-section { margin: 20px 0; display: none; }
+    input[type="text"] {
+      padding: 10px; border: none; border-radius: 10px; font-size: 1em; width: 200px;
+      background: rgba(255,255,255,0.1); color: var(--text); text-align: center;
+    }
+    .submit-btn { padding: 10px 20px; background: var(--accent-yellow); color: #000; border: none; border-radius: 10px; cursor: pointer; margin-top: 10px; }
+    .submit-btn:hover { background: #ffcc02; }
+    
+    .result {
+      margin: 20px 0; padding: 20px; border-radius: 15px; font-size: 1.5em; opacity: 0;
+      animation: fadeIn 1s ease forwards; min-height: 100px; display: none; align-items: center; justify-content: center;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .result.good { background: linear-gradient(135deg, #10b981, #34d399); color: #000; }
+    .result.bad { background: linear-gradient(135deg, var(--accent-red), #ff6b7a); }
+    .result.error { background: linear-gradient(135deg, #6b7280, #9ca3af); }
+    
+    .play-again { 
+      padding: 10px 20px; background: var(--accent-blue); color: var(--text); border: none; border-radius: 10px; cursor: pointer; margin-top: 20px; 
+      display: none; 
+    }
+    .play-again:hover { background: #5a67d8; }
+    
+    .error { color: #ff6b7a; font-size: 1.1em; margin: 10px 0; display: none; }
+    
+    /* Particle efekte për dera */
+    .particle { position: absolute; width: 4px; height: 4px; background: #fff; border-radius: 50%; pointer-events: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 class="title">👻 Dhomën e Misterit!</h1>
+    <p style="font-size: 1.1em; margin-bottom: 20px;">Zgjidh një derë kozmike: kuqe, gjelber apo blu?</p>
+    
+    <div class="doors" id="doors">
+      <button class="door-btn door-red" onclick="chooseDoor('kuqe')">Derë Kuqe</button>
+      <button class="door-btn door-yellow" onclick="chooseDoor('gjelber')">Derë Gjelbër</button>
+      <button class="door-btn door-blue" onclick="chooseDoor('blu')">Derë Blu</button>
+    </div>
+    
+    <div class="input-section" id="riddle-section">
+      <p>Pas derës së gjelbër ka një enigmë kozmike...</p>
+      <p style="font-style: italic;">Kush ishte shqiptari i parë në hënë?</p>
+      <input type="text" id="riddle-input" placeholder="Shkruaj emrin..." onkeypress="if(event.key==='Enter') submitRiddle();">
+      <button class="submit-btn" onclick="submitRiddle()">Përgjigju!</button>
+    </div>
+    
+    <div class="error" id="error"></div>
+    
+    <div class="result" id="result"></div>
+    <button class="play-again" id="play-again" onclick="resetGame()">Luaj Përsëri! 🔄</button>
+  </div>
+
+  <script>
+    let gameState = 'start'; // start, riddle, result
+    let isGood = false;
+    let message = '';
+    let errorMsg = '';
+
+    function chooseDoor(color) {
+      // Tingull i lehtë (beep)
+      const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSyBzvLYiTcIGWi77eedTRAMUKfj8LZvHAc4kdPy7HksBSR3x/DdkEAKF');
+      audio.play().catch(() => {}); // Ignoro nëse nuk lejohet
+      
+      // Efekt particle
+      createParticles(event.target);
+      
+      // Deaktivizo butonat e derave
+      document.querySelectorAll('.door-btn').forEach(btn => btn.disabled = true);
+      
+      color = color.toLowerCase();
+      if (color === 'kuqe') {
+        message = '🚫 Pas derës së kuqe ka një përbindësh kozmik! Loja mbaroi. 💀';
+        isGood = false;
+        gameState = 'result';
+        showResult();
+      } else if (color === 'blu') {
+        message = '🚫 Pas derës blu ka një kurth hapësinor! Loja mbaroi. 🌌';
+        isGood = false;
+        gameState = 'result';
+        showResult();
+      } else if (color === 'gjelber') {
+        gameState = 'riddle';
+        document.getElementById('riddle-section').style.display = 'block';
+        document.getElementById('riddle-input').focus();
+        return; // Shfaq enigmën
+      } else {
+        errorMsg = '❓ Zgjedhje e pavlefshme. Provo një derë tjetër!';
+        showError();
+        // Rivendos butonat
+        document.querySelectorAll('.door-btn').forEach(btn => btn.disabled = false);
+      }
+    }
+    
+    function submitRiddle() {
+      const input = document.getElementById('riddle-input').value.trim();
+      if (!input) return; // Shmang empty submit
+      
+      // Krahasim case-insensitive për "xhoi"
+      const answer = input.toLowerCase();
+      if (answer === 'xhoi') {
+        message = '✅ Saktë! Xhoi do të ishte krenar – je i lirë në univers! 🌟✨';
+        isGood = true;
+        gameState = 'result';
+        document.getElementById('riddle-section').style.display = 'none';
+        showResult();
+      } else {
+        message = '❌ Gabim! Nuk është Xhoi. Provo përsëri enigmën.';
+        isGood = false;
+        // Fshij input-in dhe fokuso
+        document.getElementById('riddle-input').value = '';
+        document.getElementById('riddle-input').focus();
+        showResult(); // Shfaq mesazhin e gabimit, por mbaj enigmën
+      }
+    }
+    
+    function showResult() {
+      const result = document.getElementById('result');
+      const errorDiv = document.getElementById('error');
+      errorDiv.style.display = 'none'; // Fsheh error nëse ka
+      
+      result.textContent = message;
+      result.className = `result ${isGood ? 'good' : 'bad'}`;
+      result.style.display = 'flex';
+      document.getElementById('play-again').style.display = 'block';
+      
+      // Animacion fade-in
+      result.style.opacity = '0';
+      setTimeout(() => { result.style.opacity = '1'; }, 100);
+    }
+    
+    function showError() {
+      const errorDiv = document.getElementById('error');
+      errorDiv.textContent = errorMsg;
+      errorDiv.style.display = 'block';
+      
+      // Fsheh pas 3 sekondash
+      setTimeout(() => { errorDiv.style.display = 'none'; }, 3000);
+    }
+    
+    function resetGame() {
+      gameState = 'start';
+      message = '';
+      errorMsg = '';
+      isGood = false;
+      
+      // Rivendos UI
+      document.querySelectorAll('.door-btn').forEach(btn => btn.disabled = false);
+      document.getElementById('riddle-section').style.display = 'none';
+      document.getElementById('result').style.display = 'none';
+      document.getElementById('play-again').style.display = 'none';
+      document.getElementById('riddle-input').value = '';
+      document.getElementById('error').style.display = 'none';
+    }
+    
+    function createParticles(element) {
+      for (let i = 0; i < 10; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.style.left = (element.offsetLeft + Math.random() * 100) + 'px';
+        particle.style.top = (element.offsetTop + Math.random() * 50) + 'px';
+        particle.style.animation = `stars 2s linear infinite`;
+        document.body.appendChild(particle);
+        setTimeout(() => particle.remove(), 2000);
+      }
+    }
+  </script>
+</body>
+</html>
