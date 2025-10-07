@@ -1,0 +1,215 @@
+<?php
+// cosmic-roll.php
+?>
+<!doctype html>
+<html lang="sq">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>COSMIC ROLL! — Scoreboard</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&family=Rubik:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0b0030;
+      --accent: #7b2cff;
+      --glow: rgba(123, 44, 255, 0.5);
+      --black: #111;
+    }
+    html, body {
+      height: 100%; margin: 0; font-family: "Rubik", sans-serif;
+      background: radial-gradient(circle at 50% 50%, #3b007b, #0b0030);
+      display: flex; justify-content: center; align-items: center; color: white;
+      overflow: hidden; position: relative;
+    }
+    body::before {
+      content: '';
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background-image: radial-gradient(2px 2px at 20px 30px, #eee, transparent),
+                        radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.8), transparent),
+                        radial-gradient(1px 1px at 90px 40px, #fff, transparent),
+                        radial-gradient(1px 1px at 130px 80px, rgba(255,255,255,0.6), transparent);
+      background-repeat: repeat; background-size: 200px 100px;
+      animation: twinkle 20s linear infinite;
+      pointer-events: none;
+    }
+    @keyframes twinkle { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    
+    .container { max-width: 420px; width: 100%; text-align: center; position: relative; z-index: 1; }
+    .title { 
+      font-family: "Montserrat"; font-size: 70px; font-weight: 800; margin-bottom: 10px;
+      background: linear-gradient(135deg, #fff, var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 20px var(--glow);
+    }
+    .dice-wrap { display: flex; justify-content: center; gap: 20px; margin-bottom: 20px; }
+    .dice { 
+      width: 100px; height: 100px; transition: transform 0.6s ease, opacity 0.3s ease;
+      filter: drop-shadow(0 0 10px var(--glow));
+    }
+    .dice.rolling { transform: rotate(360deg) scale(1.1); opacity: 0.7; }
+    .roll-buttons { display: flex; justify-content: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+    .roll-btn, .reset-btn {
+      padding: 10px 16px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; color: white;
+      transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    .roll-btn { 
+      background: linear-gradient(135deg, var(--accent), #5a1fd0); 
+    }
+    .roll-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px var(--glow); }
+    .reset-btn { 
+      background: #555; 
+    }
+    .reset-btn:hover { background: #777; transform: translateY(-2px); }
+    .score-card {
+      background: rgba(255,255,255,0.1); color: white; border-radius: 12px; backdrop-filter: blur(10px);
+      padding: 12px; box-shadow: 0 0 20px rgba(0,0,0,0.4); border: 1px solid var(--accent);
+    }
+    .winner-badge {
+      background: linear-gradient(135deg, #222, var(--accent)); color: #ffd86b; padding: 6px 10px;
+      border-radius: 16px; display: inline-block; font-weight: 700; font-family: "Montserrat";
+      box-shadow: 0 0 10px var(--glow); animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+    .players { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+    .col h3 { margin: 0; font-family: "Montserrat"; font-size: 20px; text-shadow: 0 0 5px var(--glow); }
+    .score-list { min-height: 100px; font-size: 30px; margin-top: 6px; }
+    .score-list div { animation: slideIn 0.3s ease; }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .totals { display: flex; justify-content: space-between; margin-top: 10px; font-weight: 800; font-size: 24px; }
+    .record { font-size: 12px; color: #ffd86b; margin-top: 5px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 class="title">COSMIC ROLL!</h1>
+
+    <div class="dice-wrap">
+      <svg class="dice" id="dice-left" viewBox="0 0 100 100">
+        <rect x="6" y="6" rx="10" ry="10" width="88" height="88" fill="#fff"/>
+        <g id="pips-left"></g>
+      </svg>
+      <svg class="dice" id="dice-right" viewBox="0 0 100 100">
+        <rect x="6" y="6" rx="10" ry="10" width="88" height="88" fill="#fff"/>
+        <g id="pips-right"></g>
+      </svg>
+    </div>
+
+    <div class="roll-buttons">
+      <button class="roll-btn" id="roll-player1" aria-label="Roll për Player 1">XHOI</button>
+      <button class="roll-btn" id="roll-player2" aria-label="Roll për Player 2">KELI</button>
+    </div>
+    <button class="reset-btn" id="reset-game" aria-label="Reset lojë">Reset Game</button>
+
+    <div class="score-card">
+      <div class="winner-badge" id="winner-badge">PLAY!</div>
+      <div class="players">
+        <div class="col">
+          <h3>Xhoi</h3>
+          <div class="score-list" id="score-list-p1"></div>
+          <div class="record">Rekord: <span id="record-p1">0</span></div>
+        </div>
+        <div class="col">
+          <h3>Keli</h3>
+          <div class="score-list" id="score-list-p2"></div>
+          <div class="record">Rekord: <span id="record-p2">0</span></div>
+        </div>
+      </div>
+      <div class="totals">
+        <div>TOTAL: <span id="total-p1">0</span></div>
+        <div>TOTAL: <span id="total-p2">0</span></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* KY JS MBET NË NJËJTËSI: JS i lojës, animacionet dhe tingujt */
+    const dicePatterns = {
+      1: '<circle cx="50" cy="50" r="6" fill="#111"/>',
+      2: '<circle cx="30" cy="30" r="6" fill="#111"/><circle cx="70" cy="70" r="6" fill="#111"/>',
+      3: '<circle cx="30" cy="30" r="6" fill="#111"/><circle cx="50" cy="50" r="6" fill="#111"/><circle cx="70" cy="70" r="6" fill="#111"/>',
+      4: '<circle cx="30" cy="30" r="6" fill="#111"/><circle cx="30" cy="70" r="6" fill="#111"/><circle cx="70" cy="30" r="6" fill="#111"/><circle cx="70" cy="70" r="6" fill="#111"/>',
+      5: '<circle cx="30" cy="30" r="6" fill="#111"/><circle cx="30" cy="70" r="6" fill="#111"/><circle cx="70" cy="30" r="6" fill="#111"/><circle cx="70" cy="70" r="6" fill="#111"/><circle cx="50" cy="50" r="6" fill="#111"/>',
+      6: '<circle cx="30" cy="25" r="6" fill="#111"/><circle cx="30" cy="50" r="6" fill="#111"/><circle cx="30" cy="75" r="6" fill="#111"/><circle cx="70" cy="25" r="6"/><circle cx="70" cy="50" r="6"/><circle cx="70" cy="75" r="6"/>'
+    };
+
+    let player1Scores = [];
+    let player2Scores = [];
+    const maxRolls = 3;
+    let records = JSON.parse(localStorage.getItem('cosmicRollRecords')) || { p1: 0, p2: 0 };
+
+    function rollDie() { return Math.floor(Math.random() * 6) + 1; }
+    function updateDice(a, b) {
+      const left = document.getElementById('pips-left');
+      const right = document.getElementById('pips-right');
+      const diceLeft = document.getElementById('dice-left');
+      const diceRight = document.getElementById('dice-right');
+      diceLeft.classList.add('rolling');
+      diceRight.classList.add('rolling');
+      setTimeout(() => {
+        left.innerHTML = dicePatterns[a];
+        right.innerHTML = dicePatterns[b];
+        diceLeft.classList.remove('rolling');
+        diceRight.classList.remove('rolling');
+      }, 300);
+    }
+
+    function addScore(listId, score) {
+      const div = document.createElement('div');
+      div.textContent = score;
+      div.style.color = score >= 10 ? '#ffd86b' : 'white';
+      document.getElementById(listId).appendChild(div);
+    }
+
+    function total(scores) { return scores.reduce((a, b) => a + b, 0); }
+    function updateTotals() {
+      document.getElementById('total-p1').textContent = total(player1Scores);
+      document.getElementById('total-p2').textContent = total(player2Scores);
+      if (total(player1Scores) > records.p1) { records.p1 = total(player1Scores); localStorage.setItem('cosmicRollRecords', JSON.stringify(records)); document.getElementById('record-p1').textContent = records.p1; }
+      if (total(player2Scores) > records.p2) { records.p2 = total(player2Scores); localStorage.setItem('cosmicRollRecords', JSON.stringify(records)); document.getElementById('record-p2').textContent = records.p2; }
+    }
+
+    function updateWinner() {
+      const badge = document.getElementById('winner-badge');
+      if (player1Scores.length === maxRolls && player2Scores.length === maxRolls) {
+        const t1 = total(player1Scores), t2 = total(player2Scores);
+        badge.textContent = t1 > t2 ? "PLAYER 1 WINS!" : t2 > t1 ? "PLAYER 2 WINS!" : "COSMIC TIE!";
+        badge.style.background = t1 > t2 ? 'linear-gradient(135deg, #22c55e, #16a34a)' : t2 > t1 ? 'linear-gradient(135deg, #ef4444, #dc2626)' : 'linear-gradient(135deg, #f59e0b, #d97706)';
+      } else badge.textContent = "ROLL!";
+    }
+
+    const rollSound = new Audio("https://cdn.pixabay.com/download/audio/2022/03/15/audio_05d821a2f1.mp3?filename=dice-roll-104156.mp3");
+    function rollForPlayer(player) {
+      if ((player === 1 && player1Scores.length < maxRolls) || (player === 2 && player2Scores.length < maxRolls)) {
+        rollSound.currentTime = 0; rollSound.play();
+        const roll1 = rollDie(), roll2 = rollDie();
+        const score = roll1 + roll2;
+        updateDice(roll1, roll2);
+        if (player === 1) { player1Scores.push(score); addScore('score-list-p1', score); }
+        else { player2Scores.push(score); addScore('score-list-p2', score); }
+        updateTotals(); updateWinner();
+      }
+    }
+
+    document.getElementById('roll-player1').onclick = () => rollForPlayer(1);
+    document.getElementById('roll-player2').onclick = () => rollForPlayer(2);
+    document.getElementById('reset-game').onclick = () => {
+      player1Scores = []; player2Scores = [];
+      document.getElementById('score-list-p1').innerHTML = '';
+      document.getElementById('score-list-p2').innerHTML = '';
+      updateTotals();
+      document.getElementById('winner-badge').textContent = 'ROLL!';
+      document.getElementById('winner-badge').style.background = 'linear-gradient(135deg, #222, var(--accent))';
+      updateDice(1, 1);
+    };
+    document.addEventListener('keydown', (e) => {
+      if (e.key === '1') rollForPlayer(1);
+      if (e.key === '2') rollForPlayer(2);
+      if (e.key.toLowerCase() === 'r') document.getElementById('reset-game').click();
+    });
+
+    document.getElementById('record-p1').textContent = records.p1;
+    document.getElementById('record-p2').textContent = records.p2;
+    updateDice(1, 1);
+  </script>
+</body>
+</html>
