@@ -1,215 +1,220 @@
 <?php
-// cosmic-roll.php
+// Logjika e lojës në PHP
+$state = $_POST['state'] ?? 'start'; // Shteti: start, door_chosen, riddle_answered
+$door = strtolower(trim($_POST['door'] ?? ''));
+$riddle_answer = trim($_POST['riddle_answer'] ?? '');
+$message = '';
+$is_good = false;
+$show_riddle = false;
+$error = '';
+$show_doors = true; // Kontroll për të shfaqur derat
+
+if ($_POST) {
+    if ($state === 'door_chosen' && $door) {
+        if ($door === 'kuqe') {
+            $message = '🚫 Pas derës së kuqe ka një përbindësh kozmik! Loja mbaroi. 💀';
+            $is_good = false;
+            $state = 'result';
+            $show_doors = false;
+        } elseif ($door === 'blu') {
+            $message = '🚫 Pas derës blu ka një kurth hapësinor! Loja mbaroi. 🌌';
+            $is_good = false;
+            $state = 'result';
+            $show_doors = false;
+        } elseif ($door === 'gjelber') {
+            $show_riddle = true;
+            $state = 'riddle';
+            $show_doors = false; // Fsheh derat kur shfaqet enigma
+        } else {
+            $error = '❓ Zgjedhje e pavlefshme. Provo një derë tjetër!';
+            $state = 'start';
+        }
+    } elseif ($state === 'riddle_answered' && $riddle_answer !== '') {
+        // Krahasim string për emrin (case-insensitive)
+        $answer = strtolower($riddle_answer);
+        if ($answer === 'xhoi') {
+            $message = '✅ Saktë! Xhoi do të ishte krenar – je i lirë në univers! 🌟✨';
+            $is_good = true;
+            $state = 'result';
+            $show_doors = false;
+        } else {
+            $message = '❌ Gabim! Nuk është Xhoi. Provo përsëri enigmën.';
+            $is_good = false;
+            $show_riddle = true;
+            $state = 'riddle';
+            $show_doors = true; // Rivendos derat për provë tjetër (opsionale)
+        }
+    }
+    
+    // Nëse "Luaj Përsëri", rivendos gjithçka
+    if (isset($_POST['reset'])) {
+        $state = 'start';
+        $message = '';
+        $show_riddle = false;
+        $error = '';
+        $show_doors = true;
+    }
+}
 ?>
-<!doctype html>
+
+<!DOCTYPE html>
 <html lang="sq">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>COSMIC ROLL! — Scoreboard</title>
-
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&family=Rubik:wght@400;700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dhomën e Misterit – Edicioni Kozmik (PHP)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Creepster&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-dark: #0b0030;
-      --accent: #7b2cff;
-      --glow: rgba(123, 44, 255, 0.5);
-      --black: #111;
+      --bg-dark: #0a0a23;
+      --accent-red: #ff4757;
+      --accent-yellow: #ffa502;
+      --accent-blue: #3742fa;
+      --glow: rgba(255, 255, 255, 0.3);
+      --text: #fff;
     }
-    html, body {
-      height: 100%; margin: 0; font-family: "Rubik", sans-serif;
-      background: radial-gradient(circle at 50% 50%, #3b007b, #0b0030);
-      display: flex; justify-content: center; align-items: center; color: white;
+    body {
+      margin: 0; padding: 0; height: 100vh; font-family: 'Montserrat', sans-serif;
+      background: linear-gradient(135deg, #0a0a23, #1a1a3a);
+      color: var(--text); display: flex; justify-content: center; align-items: center;
       overflow: hidden; position: relative;
     }
+    /* Yjet kozmikë në sfond për efekt misterioz */
     body::before {
-      content: '';
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      background-image: radial-gradient(2px 2px at 20px 30px, #eee, transparent),
-                        radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.8), transparent),
-                        radial-gradient(1px 1px at 90px 40px, #fff, transparent),
-                        radial-gradient(1px 1px at 130px 80px, rgba(255,255,255,0.6), transparent);
-      background-repeat: repeat; background-size: 200px 100px;
-      animation: twinkle 20s linear infinite;
-      pointer-events: none;
+      content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: radial-gradient(1px 1px at 20% 30%, #fff, transparent),
+                  radial-gradient(1px 1px at 80% 80%, rgba(255,255,255,0.5), transparent),
+                  radial-gradient(2px 2px at 40% 50%, #fff, transparent);
+      background-repeat: repeat; background-size: 200px 150px;
+      animation: stars 20s linear infinite;
     }
-    @keyframes twinkle { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    @keyframes stars { from { transform: translateY(0); } to { transform: translateY(-100px); } }
     
-    .container { max-width: 420px; width: 100%; text-align: center; position: relative; z-index: 1; }
-    .title { 
-      font-family: "Montserrat"; font-size: 70px; font-weight: 800; margin-bottom: 10px;
-      background: linear-gradient(135deg, #fff, var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      text-shadow: 0 0 20px var(--glow);
+    .container {
+      text-align: center; max-width: 500px; padding: 20px; z-index: 1;
+      background: rgba(0,0,0,0.5); border-radius: 20px; backdrop-filter: blur(10px);
+      box-shadow: 0 0 30px var(--glow); border: 1px solid rgba(255,255,255,0.1);
     }
-    .dice-wrap { display: flex; justify-content: center; gap: 20px; margin-bottom: 20px; }
-    .dice { 
-      width: 100px; height: 100px; transition: transform 0.6s ease, opacity 0.3s ease;
-      filter: drop-shadow(0 0 10px var(--glow));
+    .title {
+      font-family: 'Creepster', cursive; font-size: 3em; margin-bottom: 20px;
+      background: linear-gradient(45deg, var(--accent-red), var(--accent-yellow), var(--accent-blue));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 20px var(--glow); animation: glow 2s ease-in-out infinite alternate;
     }
-    .dice.rolling { transform: rotate(360deg) scale(1.1); opacity: 0.7; }
-    .roll-buttons { display: flex; justify-content: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
-    .roll-btn, .reset-btn {
-      padding: 10px 16px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; color: white;
-      transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    @keyframes glow { from { text-shadow: 0 0 20px var(--glow); } to { text-shadow: 0 0 30px var(--glow); } }
+    
+    .doors {
+      display: flex; justify-content: space-around; margin: 30px 0; flex-wrap: wrap;
     }
-    .roll-btn { 
-      background: linear-gradient(135deg, var(--accent), #5a1fd0); 
+    .door-btn {
+      padding: 15px 25px; margin: 10px; border: none; border-radius: 15px; cursor: pointer;
+      font-size: 1.2em; font-weight: 700; color: var(--text); transition: all 0.3s ease;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3); min-width: 120px;
     }
-    .roll-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px var(--glow); }
-    .reset-btn { 
-      background: #555; 
+    .door-red { background: linear-gradient(135deg, var(--accent-red), #ff6b7a); }
+    .door-yellow { background: linear-gradient(135deg, var(--accent-yellow), #ffcc02); }
+    .door-blue { background: linear-gradient(135deg, var(--accent-blue), #5a67d8); }
+    .door-btn:hover:not(:disabled) { transform: scale(1.05); box-shadow: 0 8px 25px var(--glow); }
+    .door-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    
+    .input-section { margin: 20px 0; display: <?php echo $show_riddle ? 'block' : 'none'; ?>; }
+    input[type="text"] {
+      padding: 10px; border: none; border-radius: 10px; font-size: 1em; width: 200px;
+      background: rgba(255,255,255,0.1); color: var(--text); text-align: center;
     }
-    .reset-btn:hover { background: #777; transform: translateY(-2px); }
-    .score-card {
-      background: rgba(255,255,255,0.1); color: white; border-radius: 12px; backdrop-filter: blur(10px);
-      padding: 12px; box-shadow: 0 0 20px rgba(0,0,0,0.4); border: 1px solid var(--accent);
+    .submit-btn { padding: 10px 20px; background: var(--accent-yellow); color: #000; border: none; border-radius: 10px; cursor: pointer; margin-top: 10px; }
+    .submit-btn:hover { background: #ffcc02; }
+    
+    .result {
+      margin: 20px 0; padding: 20px; border-radius: 15px; font-size: 1.5em; opacity: 0;
+      animation: fadeIn 1s ease forwards; min-height: 100px; display: flex; align-items: center; justify-content: center;
+      display: <?php echo $message ? 'flex' : 'none'; ?>;
     }
-    .winner-badge {
-      background: linear-gradient(135deg, #222, var(--accent)); color: #ffd86b; padding: 6px 10px;
-      border-radius: 16px; display: inline-block; font-weight: 700; font-family: "Montserrat";
-      box-shadow: 0 0 10px var(--glow); animation: pulse 2s infinite;
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .result.good { background: linear-gradient(135deg, #10b981, #34d399); color: #000; }
+    .result.bad { background: linear-gradient(135deg, var(--accent-red), #ff6b7a); }
+    .result.error { background: linear-gradient(135deg, #6b7280, #9ca3af); }
+    
+    .play-again { 
+      padding: 10px 20px; background: var(--accent-blue); color: var(--text); border: none; border-radius: 10px; cursor: pointer; margin-top: 20px; 
+      display: <?php echo $message ? 'block' : 'none'; ?>; 
     }
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
-    .players { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-    .col h3 { margin: 0; font-family: "Montserrat"; font-size: 20px; text-shadow: 0 0 5px var(--glow); }
-    .score-list { min-height: 100px; font-size: 30px; margin-top: 6px; }
-    .score-list div { animation: slideIn 0.3s ease; }
-    @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    .totals { display: flex; justify-content: space-between; margin-top: 10px; font-weight: 800; font-size: 24px; }
-    .record { font-size: 12px; color: #ffd86b; margin-top: 5px; }
+    .play-again:hover { background: #5a67d8; }
+    
+    .error { color: #ff6b7a; font-size: 1.1em; margin: 10px 0; display: <?php echo $error ? 'block' : 'none'; ?>; }
+    
+    /* Particle efekte për dera */
+    .particle { position: absolute; width: 4px; height: 4px; background: #fff; border-radius: 50%; pointer-events: none; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1 class="title">COSMIC ROLL!</h1>
-
-    <div class="dice-wrap">
-      <svg class="dice" id="dice-left" viewBox="0 0 100 100">
-        <rect x="6" y="6" rx="10" ry="10" width="88" height="88" fill="#fff"/>
-        <g id="pips-left"></g>
-      </svg>
-      <svg class="dice" id="dice-right" viewBox="0 0 100 100">
-        <rect x="6" y="6" rx="10" ry="10" width="88" height="88" fill="#fff"/>
-        <g id="pips-right"></g>
-      </svg>
-    </div>
-
-    <div class="roll-buttons">
-      <button class="roll-btn" id="roll-player1" aria-label="Roll për Player 1">XHOI</button>
-      <button class="roll-btn" id="roll-player2" aria-label="Roll për Player 2">KELI</button>
-    </div>
-    <button class="reset-btn" id="reset-game" aria-label="Reset lojë">Reset Game</button>
-
-    <div class="score-card">
-      <div class="winner-badge" id="winner-badge">PLAY!</div>
-      <div class="players">
-        <div class="col">
-          <h3>Xhoi</h3>
-          <div class="score-list" id="score-list-p1"></div>
-          <div class="record">Rekord: <span id="record-p1">0</span></div>
-        </div>
-        <div class="col">
-          <h3>Keli</h3>
-          <div class="score-list" id="score-list-p2"></div>
-          <div class="record">Rekord: <span id="record-p2">0</span></div>
-        </div>
+    <h1 class="title">👻 Dhomën e Misterit!</h1>
+    <p style="font-size: 1.1em; margin-bottom: 20px;">Zgjidh një derë kozmike: kuqe, gjelber apo blu?</p>
+    
+    <?php if (($state === 'start' || $state === 'riddle' || $error) && $show_doors): ?>
+    <form method="POST" id="door-form">
+      <input type="hidden" name="state" value="<?php echo $state === 'riddle' ? 'riddle_answered' : 'door_chosen'; ?>">
+      <div class="doors">
+        <button type="submit" class="door-btn door-red" name="door" value="kuqe" <?php echo ($state !== 'start' && !$error) ? 'disabled' : ''; ?>>Derë Kuqe</button>
+        <button type="submit" class="door-btn door-yellow" name="door" value="gjelber" <?php echo ($state !== 'start' && !$error) ? 'disabled' : ''; ?>>Derë Gjelbër</button>
+        <button type="submit" class="door-btn door-blue" name="door" value="blu" <?php echo ($state !== 'start' && !$error) ? 'disabled' : ''; ?>>Derë Blu</button>
       </div>
-      <div class="totals">
-        <div>TOTAL: <span id="total-p1">0</span></div>
-        <div>TOTAL: <span id="total-p2">0</span></div>
-      </div>
+    </form>
+    <?php endif; ?>
+    
+    <div class="input-section" id="riddle-section">
+      <p>Pas derës së gjelbër ka një enigmë kozmike...</p>
+      <p style="font-style: italic;">Kush ishte shqiptari i parë në hënë?</p>
+      <form method="POST" id="riddle-form">
+        <input type="hidden" name="state" value="riddle_answered">
+        <input type="text" name="riddle_answer" id="riddle-input" placeholder="Shkruaj emrin..." required>
+        <button type="submit" class="submit-btn">Përgjigju!</button>
+      </form>
     </div>
+    
+    <?php if ($error): ?>
+    <div class="error"><?php echo $error; ?></div>
+    <?php endif; ?>
+    
+    <?php if ($message): ?>
+    <div class="result <?php echo $is_good ? 'good' : 'bad'; ?>"><?php echo $message; ?></div>
+    <form method="POST">
+      <input type="hidden" name="reset" value="1">
+      <button type="submit" class="play-again">Luaj Përsëri! 🔄</button>
+    </form>
+    <?php endif; ?>
   </div>
 
   <script>
-    /* KY JS MBET NË NJËJTËSI: JS i lojës, animacionet dhe tingujt */
-    const dicePatterns = {
-      1: '<circle cx="50" cy="50" r="6" fill="#111"/>',
-      2: '<circle cx="30" cy="30" r="6" fill="#111"/><circle cx="70" cy="70" r="6" fill="#111"/>',
-      3: '<circle cx="30" cy="30" r="6" fill="#111"/><circle cx="50" cy="50" r="6" fill="#111"/><circle cx="70" cy="70" r="6" fill="#111"/>',
-      4: '<circle cx="30" cy="30" r="6" fill="#111"/><circle cx="30" cy="70" r="6" fill="#111"/><circle cx="70" cy="30" r="6" fill="#111"/><circle cx="70" cy="70" r="6" fill="#111"/>',
-      5: '<circle cx="30" cy="30" r="6" fill="#111"/><circle cx="30" cy="70" r="6" fill="#111"/><circle cx="70" cy="30" r="6" fill="#111"/><circle cx="70" cy="70" r="6" fill="#111"/><circle cx="50" cy="50" r="6" fill="#111"/>',
-      6: '<circle cx="30" cy="25" r="6" fill="#111"/><circle cx="30" cy="50" r="6" fill="#111"/><circle cx="30" cy="75" r="6" fill="#111"/><circle cx="70" cy="25" r="6"/><circle cx="70" cy="50" r="6"/><circle cx="70" cy="75" r="6"/>'
-    };
-
-    let player1Scores = [];
-    let player2Scores = [];
-    const maxRolls = 3;
-    let records = JSON.parse(localStorage.getItem('cosmicRollRecords')) || { p1: 0, p2: 0 };
-
-    function rollDie() { return Math.floor(Math.random() * 6) + 1; }
-    function updateDice(a, b) {
-      const left = document.getElementById('pips-left');
-      const right = document.getElementById('pips-right');
-      const diceLeft = document.getElementById('dice-left');
-      const diceRight = document.getElementById('dice-right');
-      diceLeft.classList.add('rolling');
-      diceRight.classList.add('rolling');
-      setTimeout(() => {
-        left.innerHTML = dicePatterns[a];
-        right.innerHTML = dicePatterns[b];
-        diceLeft.classList.remove('rolling');
-        diceRight.classList.remove('rolling');
-      }, 300);
-    }
-
-    function addScore(listId, score) {
-      const div = document.createElement('div');
-      div.textContent = score;
-      div.style.color = score >= 10 ? '#ffd86b' : 'white';
-      document.getElementById(listId).appendChild(div);
-    }
-
-    function total(scores) { return scores.reduce((a, b) => a + b, 0); }
-    function updateTotals() {
-      document.getElementById('total-p1').textContent = total(player1Scores);
-      document.getElementById('total-p2').textContent = total(player2Scores);
-      if (total(player1Scores) > records.p1) { records.p1 = total(player1Scores); localStorage.setItem('cosmicRollRecords', JSON.stringify(records)); document.getElementById('record-p1').textContent = records.p1; }
-      if (total(player2Scores) > records.p2) { records.p2 = total(player2Scores); localStorage.setItem('cosmicRollRecords', JSON.stringify(records)); document.getElementById('record-p2').textContent = records.p2; }
-    }
-
-    function updateWinner() {
-      const badge = document.getElementById('winner-badge');
-      if (player1Scores.length === maxRolls && player2Scores.length === maxRolls) {
-        const t1 = total(player1Scores), t2 = total(player2Scores);
-        badge.textContent = t1 > t2 ? "PLAYER 1 WINS!" : t2 > t1 ? "PLAYER 2 WINS!" : "COSMIC TIE!";
-        badge.style.background = t1 > t2 ? 'linear-gradient(135deg, #22c55e, #16a34a)' : t2 > t1 ? 'linear-gradient(135deg, #ef4444, #dc2626)' : 'linear-gradient(135deg, #f59e0b, #d97706)';
-      } else badge.textContent = "ROLL!";
-    }
-
-    const rollSound = new Audio("https://cdn.pixabay.com/download/audio/2022/03/15/audio_05d821a2f1.mp3?filename=dice-roll-104156.mp3");
-    function rollForPlayer(player) {
-      if ((player === 1 && player1Scores.length < maxRolls) || (player === 2 && player2Scores.length < maxRolls)) {
-        rollSound.currentTime = 0; rollSound.play();
-        const roll1 = rollDie(), roll2 = rollDie();
-        const score = roll1 + roll2;
-        updateDice(roll1, roll2);
-        if (player === 1) { player1Scores.push(score); addScore('score-list-p1', score); }
-        else { player2Scores.push(score); addScore('score-list-p2', score); }
-        updateTotals(); updateWinner();
+    // JS për efekte (particle dhe tingull)
+    document.querySelectorAll('.door-btn').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        // Tingull i lehtë (beep)
+        const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSyBzvLYiTcIGWi77eedTRAMUKfj8LZvHAc4kdPy7HksBSR3x/DdkEAKF');
+        audio.play().catch(() => {});
+        
+        // Efekt particle
+        createParticles(this);
+      });
+    });
+    
+    function createParticles(element) {
+      for (let i = 0; i < 10; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.style.left = (element.offsetLeft + Math.random() * 100) + 'px';
+        particle.style.top = (element.offsetTop + Math.random() * 50) + 'px';
+        particle.style.animation = `stars 2s linear infinite`;
+        document.body.appendChild(particle);
+        setTimeout(() => particle.remove(), 2000);
       }
     }
-
-    document.getElementById('roll-player1').onclick = () => rollForPlayer(1);
-    document.getElementById('roll-player2').onclick = () => rollForPlayer(2);
-    document.getElementById('reset-game').onclick = () => {
-      player1Scores = []; player2Scores = [];
-      document.getElementById('score-list-p1').innerHTML = '';
-      document.getElementById('score-list-p2').innerHTML = '';
-      updateTotals();
-      document.getElementById('winner-badge').textContent = 'ROLL!';
-      document.getElementById('winner-badge').style.background = 'linear-gradient(135deg, #222, var(--accent))';
-      updateDice(1, 1);
-    };
-    document.addEventListener('keydown', (e) => {
-      if (e.key === '1') rollForPlayer(1);
-      if (e.key === '2') rollForPlayer(2);
-      if (e.key.toLowerCase() === 'r') document.getElementById('reset-game').click();
-    });
-
-    document.getElementById('record-p1').textContent = records.p1;
-    document.getElementById('record-p2').textContent = records.p2;
-    updateDice(1, 1);
+    
+    // Auto-focus në input enigma nëse shfaqet
+    <?php if ($show_riddle): ?>
+    document.getElementById('riddle-input').focus();
+    <?php endif; ?>
   </script>
 </body>
 </html>
